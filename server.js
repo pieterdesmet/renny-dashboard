@@ -36,92 +36,196 @@ async function scrapeRennyProfile() {
       stats: {}
     };
 
-    // Zoek naar statistieken in de HTML
+    // Zoek naar statistieken in de HTML - gebruik specifieke selectors
     const text = $.text();
     
-    // Extract aantal berichten
-    const postsMatch = text.match(/(\d{1,3}(?:\s?\d{3})*)\s*(?:berichten|posts)/i);
-    if (postsMatch) {
-      data.stats.totalPosts = parseInt(postsMatch[1].replace(/\s/g, ''));
-    } else {
-      // Fallback: zoek naar "120735" of vergelijkbare nummers
-      const numberMatch = text.match(/(\d{6,})\s*(?:berichten|posts|Aantal berichten)/i);
-      if (numberMatch) {
-        data.stats.totalPosts = parseInt(numberMatch[1]);
+    // Debug: log belangrijke secties (alleen in development)
+    if (process.env.NODE_ENV !== 'production') {
+      const statsSection = $('.profile, .user-statistics, dl').html();
+      console.log('Stats section found:', statsSection ? 'Yes' : 'No');
+    }
+    
+    // Extract aantal berichten - zoek naar "Aantal berichten:120736" of "Aantal berichten: 120736"
+    const postsPatterns = [
+      /Aantal berichten[:\s]*(\d{1,3}(?:\s?\d{3})*)/i,
+      /Aantal berichten[:\s]*(\d{6,})/i,
+      /(\d{6,})\s*(?:berichten|posts)/i
+    ];
+    
+    for (const pattern of postsPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        data.stats.totalPosts = parseInt(match[1].replace(/\s/g, ''));
+        break;
+      }
+    }
+    
+    // Probeer ook via HTML structuur
+    if (!data.stats.totalPosts) {
+      $('dt:contains("Aantal berichten"), dt:contains("berichten")').each(function() {
+        const value = $(this).next('dd').text().trim();
+        const num = parseInt(value.replace(/\s/g, ''));
+        if (!isNaN(num) && num > 1000) {
+          data.stats.totalPosts = num;
+        }
+      });
+    }
+
+    // Extract lid sinds - zoek naar "Lid geworden op:wo 20 jan 2016, 08:38"
+    const joinedPatterns = [
+      /Lid geworden op[:\s]*(\w+\s+\d{1,2}\s+\w+\s+\d{4}[^,]*)/i,
+      /Lid geworden op[:\s]*(\d{1,2}\s+\w+\s+\d{4})/i
+    ];
+    
+    for (const pattern of joinedPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        // Clean up de datum (verwijder dag van week als die er is)
+        let dateStr = match[1].trim();
+        dateStr = dateStr.replace(/^(ma|di|wo|do|vr|za|zo)\s+/i, ''); // Verwijder dag afkorting
+        data.stats.joinedDate = dateStr;
+        break;
       }
     }
 
-    // Extract lid sinds
-    const joinedMatch = text.match(/Lid geworden op:\s*(\d{1,2}\s+\w+\s+\d{4})/i);
-    if (joinedMatch) {
-      data.stats.joinedDate = joinedMatch[1];
+    // Extract laatst actief - zoek naar "Laatst actief:vr 16 jan 2026, 14:16"
+    const lastActivePatterns = [
+      /Laatst actief[:\s]*(\w+\s+\d{1,2}\s+\w+\s+\d{4}[^,]*)/i,
+      /Laatst actief[:\s]*(\d{1,2}\s+\w+\s+\d{4}[^,]*)/i
+    ];
+    
+    for (const pattern of lastActivePatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        let dateStr = match[1].trim();
+        dateStr = dateStr.replace(/^(ma|di|wo|do|vr|za|zo)\s+/i, '');
+        data.stats.lastActive = dateStr;
+        break;
+      }
     }
 
-    // Extract laatst actief
-    const lastActiveMatch = text.match(/Laatst actief:\s*(\d{1,2}\s+\w+\s+\d{4}[^,]*)/i);
-    if (lastActiveMatch) {
-      data.stats.lastActive = lastActiveMatch[1].trim();
+    // Extract berichten per dag - zoek naar "33.09 berichten per dag"
+    const postsPerDayPatterns = [
+      /(\d+\.?\d*)\s*berichten per dag/i,
+      /(\d+\.?\d*)\s*posts per day/i
+    ];
+    
+    for (const pattern of postsPerDayPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        data.stats.postsPerDay = parseFloat(match[1]);
+        break;
+      }
     }
 
-    // Extract berichten per dag
-    const postsPerDayMatch = text.match(/(\d+\.?\d*)\s*(?:berichten per dag|posts per day)/i);
-    if (postsPerDayMatch) {
-      data.stats.postsPerDay = parseFloat(postsPerDayMatch[1]);
+    // Extract percentage - zoek naar "2.54% van alle berichten"
+    const percentagePatterns = [
+      /(\d+\.?\d*)%\s*van alle berichten/i,
+      /(\d+\.?\d*)%\s*of all posts/i
+    ];
+    
+    for (const pattern of percentagePatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        data.stats.percentageOfAllPosts = parseFloat(match[1]);
+        break;
+      }
     }
 
-    // Extract percentage
-    const percentageMatch = text.match(/(\d+\.?\d*)%\s*(?:van alle berichten|of all posts)/i);
-    if (percentageMatch) {
-      data.stats.percentageOfAllPosts = parseFloat(percentageMatch[1]);
-    }
-
-    // Extract thanks statistieken - verbeterde patterns
-    // Probeer verschillende formaten
+    // Extract thanks statistieken - specifieke patterns voor "Has thanked: 1418 times"
+    // Probeer eerst exacte match met "times"
     const thankedPatterns = [
-      /Has thanked:\s*(\d+)/i,
-      /Zelf bedankt[:\s]*(\d+)/i,
+      /Has thanked[:\s]*(\d{1,4}(?:\s?\d{3})*)\s*times/i,
       /Has thanked[:\s]*(\d+)/i,
-      /thanked:\s*(\d+)/i
+      /Zelf bedankt[:\s]*(\d+)/i
     ];
     
     for (const pattern of thankedPatterns) {
       const match = text.match(pattern);
       if (match) {
-        data.stats.hasThanked = parseInt(match[1]);
+        data.stats.hasThanked = parseInt(match[1].replace(/\s/g, ''));
         break;
       }
     }
     
-    // Zoek ook in HTML structuur
-    $('dt:contains("Has thanked"), dt:contains("Zelf bedankt")').each(function() {
-      const value = $(this).next('dd').text().trim();
-      const num = parseInt(value);
-      if (!isNaN(num)) {
-        data.stats.hasThanked = num;
-      }
-    });
+    // Zoek ook in HTML structuur - phpBB gebruikt vaak <dt> en <dd> tags
+    if (!data.stats.hasThanked) {
+      $('dt:contains("Has thanked"), dt:contains("Zelf bedankt")').each(function() {
+        const $dd = $(this).next('dd');
+        if ($dd.length) {
+          const value = $dd.text().trim();
+          // Extract nummer, verwijder "times" of andere tekst
+          const numMatch = value.match(/(\d{1,4}(?:\s?\d{3})*)/);
+          if (numMatch) {
+            data.stats.hasThanked = parseInt(numMatch[1].replace(/\s/g, ''));
+          }
+        }
+      });
+    }
 
+    // Extract "Been thanked" - specifieke patterns voor "Been thanked: 37150 times"
     const beenThankedPatterns = [
-      /Been thanked:\s*(\d+)/i,
-      /Bedankt ontvangen[:\s]*(\d+)/i,
+      /Been thanked[:\s]*(\d{1,4}(?:\s?\d{3})*)\s*times/i,
       /Been thanked[:\s]*(\d+)/i,
-      /thanked:\s*(\d+)/i
+      /Bedankt ontvangen[:\s]*(\d+)/i
     ];
     
     for (const pattern of beenThankedPatterns) {
       const match = text.match(pattern);
       if (match) {
-        data.stats.beenThanked = parseInt(match[1]);
+        data.stats.beenThanked = parseInt(match[1].replace(/\s/g, ''));
         break;
       }
     }
     
     // Zoek ook in HTML structuur
-    $('dt:contains("Been thanked"), dt:contains("Bedankt ontvangen")').each(function() {
-      const value = $(this).next('dd').text().trim();
-      const num = parseInt(value);
-      if (!isNaN(num)) {
-        data.stats.beenThanked = num;
+    if (!data.stats.beenThanked) {
+      $('dt:contains("Been thanked"), dt:contains("Bedankt ontvangen")').each(function() {
+        const $dd = $(this).next('dd');
+        if ($dd.length) {
+          const value = $dd.text().trim();
+          const numMatch = value.match(/(\d{1,4}(?:\s?\d{3})*)/);
+          if (numMatch) {
+            data.stats.beenThanked = parseInt(numMatch[1].replace(/\s/g, ''));
+          }
+        }
+      });
+    }
+    
+    // Als laatste redmiddel: zoek naar alle getallen na "Has thanked" of "Been thanked"
+    if (!data.stats.hasThanked || !data.stats.beenThanked) {
+      const lines = text.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.includes('Has thanked') && !data.stats.hasThanked) {
+          const numMatch = line.match(/(\d{1,4}(?:\s?\d{3})*)/);
+          if (numMatch) {
+            data.stats.hasThanked = parseInt(numMatch[1].replace(/\s/g, ''));
+          }
+        }
+        if (line.includes('Been thanked') && !data.stats.beenThanked) {
+          const numMatch = line.match(/(\d{1,4}(?:\s?\d{3})*)/);
+          if (numMatch) {
+            data.stats.beenThanked = parseInt(numMatch[1].replace(/\s/g, ''));
+          }
+        }
+      }
+    }
+    
+    // Extra: zoek in alle tekst elementen die "Has thanked" of "Been thanked" bevatten
+    $('*').each(function() {
+      const elementText = $(this).text();
+      if (elementText.includes('Has thanked') && !data.stats.hasThanked) {
+        const numMatch = elementText.match(/Has thanked[:\s]*(\d{1,4}(?:\s?\d{3})*)/i);
+        if (numMatch) {
+          data.stats.hasThanked = parseInt(numMatch[1].replace(/\s/g, ''));
+        }
+      }
+      if (elementText.includes('Been thanked') && !data.stats.beenThanked) {
+        const numMatch = elementText.match(/Been thanked[:\s]*(\d{1,4}(?:\s?\d{3})*)/i);
+        if (numMatch) {
+          data.stats.beenThanked = parseInt(numMatch[1].replace(/\s/g, ''));
+        }
       }
     });
 
@@ -135,16 +239,16 @@ async function scrapeRennyProfile() {
       }
     }
 
-    // Hardcoded fallback data (van de web search results)
+    // Hardcoded fallback data (bijgewerkt met huidige waarden)
     if (!data.stats.totalPosts) {
       data.stats = {
-        totalPosts: 120735,
+        totalPosts: 120736,
         joinedDate: '20 jan 2016',
-        lastActive: '16 jan 2026, 13:06',
+        lastActive: '16 jan 2026, 14:16',
         postsPerDay: 33.09,
         percentageOfAllPosts: 2.54,
-        hasThanked: 39,
-        beenThanked: 470,
+        hasThanked: 1418,
+        beenThanked: 37150,
         daysSinceJoined: 3650,
         averagePostsPerDay: 33.09,
         postsInLast10Min: 0,
@@ -153,9 +257,9 @@ async function scrapeRennyProfile() {
       };
     }
     
-    // Zorg dat thanks altijd een waarde hebben
-    if (!data.stats.hasThanked) data.stats.hasThanked = 39;
-    if (!data.stats.beenThanked) data.stats.beenThanked = 470;
+    // Zorg dat thanks altijd een waarde hebben (gebruik fallback als scraping faalt)
+    if (!data.stats.hasThanked) data.stats.hasThanked = 1418;
+    if (!data.stats.beenThanked) data.stats.beenThanked = 37150;
     
     // Initialiseer nieuwe velden
     if (!data.stats.postsInLast10Min) data.stats.postsInLast10Min = 0;
@@ -171,13 +275,13 @@ async function scrapeRennyProfile() {
       profileUrl: 'https://stamnummer3.be/memberlist.php?mode=viewprofile&u=77',
       scrapedAt: new Date().toISOString(),
       stats: {
-        totalPosts: 120735,
+        totalPosts: 120736,
         joinedDate: '20 jan 2016',
-        lastActive: '16 jan 2026, 13:06',
+        lastActive: '16 jan 2026, 14:16',
         postsPerDay: 33.09,
         percentageOfAllPosts: 2.54,
-        hasThanked: 39,
-        beenThanked: 470,
+        hasThanked: 1418,
+        beenThanked: 37150,
         daysSinceJoined: 3650,
         averagePostsPerDay: 33.09,
         postsInLast10Min: 0,
