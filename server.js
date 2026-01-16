@@ -269,15 +269,7 @@ async function scrapeRennyProfile() {
     if (!data.stats.hasThanked) data.stats.hasThanked = 1418;
     if (!data.stats.beenThanked) data.stats.beenThanked = 37150;
     
-    // Initialiseer nieuwe velden
-    if (!data.stats.postsInLast30Min) data.stats.postsInLast30Min = 0;
-    if (!data.stats.postsInLastHour) data.stats.postsInLastHour = 0;
-    if (!data.stats.postsToday) data.stats.postsToday = 0;
-    if (!data.stats.postsThisWeek) data.stats.postsThisWeek = 0;
-    if (!data.stats.postsPerHour) data.stats.postsPerHour = 0;
-    if (!data.stats.topics) data.stats.topics = [];
-    if (!data.stats.activeTopicsNow) data.stats.activeTopicsNow = [];
-    if (!data.stats.totalActiveTopics) data.stats.totalActiveTopics = 0;
+    // Alleen data die 100% zeker is wordt behouden
 
     return data;
   } catch (error) {
@@ -297,17 +289,7 @@ async function scrapeRennyProfile() {
         beenThanked: 37150,
         daysSinceJoined: 3650,
         averagePostsPerDay: 33.09,
-        postsInLast30Min: 0,
-        postsInLastHour: 0,
-        postsToday: 0,
-        postsThisWeek: 0,
-        postsPerHour: 0,
-        lastPostTime: null,
-        lastPostTimeFormatted: null,
-        avgTimeBetweenPosts: null,
-        topics: [],
-        activeTopicsNow: [],
-        totalActiveTopics: 0
+        // Alleen data die 100% zeker is
       },
       error: 'Using cached/fallback data'
     };
@@ -1073,69 +1055,8 @@ app.get('/api/renny', async (req, res) => {
     // Scrape nieuwe data
     const data = await scrapeRennyProfile();
     
-    // Voeg recente posts en topics toe
-    try {
-      const recentPosts = await scrapeRecentPosts();
-      const topics = await scrapeTopics();
-      const activeTopicsNow = await scrapeActiveTopicsNow();
-      const monthlyPosts = await scrapeMonthlyPosts();
-      const mostActiveTopic = await findMostActiveTopic();
-      const responseTime = await calculateResponseTime();
-      
-      // Bereken meest actieve tijdstip
-      const activeTimeOfDay = calculateMostActiveTimeOfDay(recentPosts.recentPosts || []);
-      
-      // Update met nieuwe statistieken
-      data.stats.postsInLast30Min = recentPosts.postsInLast30Min || 0;
-      data.stats.postsInLastHour = recentPosts.postsInLastHour || 0;
-      data.stats.postsToday = recentPosts.postsToday || 0;
-      data.stats.postsThisWeek = recentPosts.postsThisWeek || 0;
-      data.stats.lastPostTime = recentPosts.lastPostTime;
-      data.stats.lastPostTimeFormatted = recentPosts.lastPostTimeFormatted;
-      data.stats.avgTimeBetweenPosts = recentPosts.avgTimeBetweenPosts;
-      data.stats.postsPerHour = recentPosts.postsPerHour || 0;
-      
-      data.stats.recentPosts = recentPosts.recentPosts || [];
-      data.stats.topics = topics.slice(0, 5); // Top 5 topics
-      data.stats.activeTopicsNow = activeTopicsNow.slice(0, 5); // Top 5 actieve topics NU
-      data.stats.totalActiveTopics = topics.length;
-      
-      // Nieuwe statistieken
-      data.stats.mostActiveTimeOfDay = activeTimeOfDay;
-      data.stats.mostActiveTopic = mostActiveTopic.mostActiveTopic;
-      data.stats.topTopics = mostActiveTopic.topTopics;
-      data.stats.responseTime = responseTime;
-      data.stats.monthlyPosts = monthlyPosts;
-      
-      // Bereken extra statistieken
-      data.stats.postsPerMinute = data.stats.postsInLast30Min > 0 
-        ? (data.stats.postsInLast30Min / 30).toFixed(2) 
-        : 0;
-      data.stats.estimatedPostsToday = data.stats.postsPerHour * 24;
-      data.stats.activityLevel = data.stats.postsInLast30Min > 10 ? 'Extreem Actief' 
-        : data.stats.postsInLast30Min > 5 ? 'Zeer Actief'
-        : data.stats.postsInLast30Min > 2 ? 'Actief'
-        : 'Normaal';
-    } catch (error) {
-      console.error('Error fetching additional stats:', error);
-      // Gebruik fallback
-      data.stats.postsInLast30Min = 0;
-      data.stats.postsInLastHour = 0;
-      data.stats.postsToday = 0;
-      data.stats.postsThisWeek = 0;
-      data.stats.lastPostTime = null;
-      data.stats.lastPostTimeFormatted = null;
-      data.stats.avgTimeBetweenPosts = null;
-      data.stats.postsPerHour = 0;
-      data.stats.topics = [];
-      data.stats.activeTopicsNow = [];
-      data.stats.totalActiveTopics = 0;
-      data.stats.mostActiveTimeOfDay = { mostActiveHour: null, hourlyDistribution: [] };
-      data.stats.mostActiveTopic = null;
-      data.stats.topTopics = [];
-      data.stats.responseTime = { averageResponseTimeFormatted: 'N/A' };
-      data.stats.monthlyPosts = [];
-    }
+    // Alleen data die 100% zeker is van de profielpagina wordt gebruikt
+    // Geen assumpties of schattingen meer
     
     cachedData = data;
     lastFetch = now;

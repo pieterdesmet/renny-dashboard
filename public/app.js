@@ -1,5 +1,4 @@
-let activityChart = null;
-let hourlyChart = null;
+// Charts verwijderd - alleen data die 100% zeker is
 
 // Format grote nummers
 function formatNumber(num) {
@@ -30,40 +29,7 @@ function updateDashboard(data) {
     document.getElementById('hasThanked').textContent = formatNumber(stats.hasThanked || 0);
     document.getElementById('daysActive').textContent = formatNumber(stats.daysSinceJoined || 0);
     
-    // Update nieuwe statistieken
-    document.getElementById('postsIn30Min').textContent = stats.postsInLast30Min || 0;
-    document.getElementById('postsToday').textContent = stats.postsToday || 0;
-    document.getElementById('activeTopics').textContent = stats.totalActiveTopics || 0;
-    
-    // Update speed stats
-    document.getElementById('speed30Min').textContent = stats.postsInLast30Min || 0;
-    document.getElementById('speedLastHour').textContent = stats.postsInLastHour || 0;
-    document.getElementById('speedToday').textContent = stats.postsToday || 0;
-    document.getElementById('speedThisWeek').textContent = formatNumber(stats.postsThisWeek || 0);
-    
-    // Update gemiddelde tijd tussen posts
-    if (stats.avgTimeBetweenPosts) {
-      const avgTime = parseFloat(stats.avgTimeBetweenPosts);
-      if (avgTime < 60) {
-        document.getElementById('avgTimeBetween').textContent = avgTime.toFixed(1) + ' min';
-      } else {
-        document.getElementById('avgTimeBetween').textContent = (avgTime / 60).toFixed(1) + ' uur';
-      }
-    } else {
-      document.getElementById('avgTimeBetween').textContent = '-';
-    }
-    
-    // Update laatste post tijd
-    if (stats.lastPostTimeFormatted) {
-      document.getElementById('lastPostTime').textContent = stats.lastPostTimeFormatted;
-    } else if (stats.lastPostTime) {
-      const lastPost = new Date(stats.lastPostTime);
-      document.getElementById('lastPostTime').textContent = lastPost.toLocaleString('nl-NL');
-    } else {
-      document.getElementById('lastPostTime').textContent = 'Onbekend';
-    }
-    
-    // Update info section
+    // Update info section (alleen data die 100% zeker is)
     document.getElementById('joinedDate').textContent = stats.joinedDate || '-';
     document.getElementById('lastActive').textContent = stats.lastActive || '-';
     
@@ -71,20 +37,6 @@ function updateDashboard(data) {
     const lastUpdated = new Date(data.scrapedAt);
     document.getElementById('lastUpdated').textContent = 
         `Laatst bijgewerkt: ${lastUpdated.toLocaleString('nl-NL')}`;
-    
-    // Update chart
-    updateChart(stats);
-    
-    // Update topics list
-    updateTopicsList(stats.topics || []);
-    
-    // Update actieve topics NU
-    updateActiveTopicsNow(stats.activeTopicsNow || []);
-    
-    // Update nieuwe statistieken
-    updateMostActiveTimeOfDay(stats.mostActiveTimeOfDay);
-    updateMostActiveTopic(stats.mostActiveTopic, stats.topTopics);
-    updateResponseTime(stats.responseTime);
 }
 
 // Update meest actieve tijdstip

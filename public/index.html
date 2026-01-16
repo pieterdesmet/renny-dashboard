@@ -96,15 +96,6 @@
                 </div>
             </div>
 
-            <!-- Actieve topics -->
-            <div class="stat-card topics">
-                <div class="stat-icon">🔥</div>
-                <div class="stat-content">
-                    <h3>Actieve Topics</h3>
-                    <div class="stat-value" id="activeTopics">-</div>
-                    <div class="stat-label">Waar Renny post</div>
-                </div>
-            </div>
         </div>
 
         <div class="info-section">
@@ -127,123 +118,8 @@
             </div>
         </div>
 
-        <div class="chart-section">
-            <div class="chart-card">
-                <h3>📊 Activiteit Visualisatie</h3>
-                <canvas id="activityChart"></canvas>
-            </div>
-        </div>
 
-        <!-- Topics sectie -->
-        <div class="topics-section">
-            <div class="topics-card">
-                <h3>🔥 Meest Actieve Topics</h3>
-                <p class="section-subtitle">Topics waar Renny het meest post</p>
-                <div id="topicsList" class="topics-list">
-                    <div class="loading-topics">Laden...</div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Posting Speed sectie -->
-        <div class="speed-section">
-            <div class="speed-card">
-                <h3>⚡ Posting Speed Analyse</h3>
-                <p class="section-subtitle">Gedetailleerde activiteit statistieken</p>
-                <div class="speed-stats">
-                    <div class="speed-item">
-                        <span class="speed-label">Posts in laatste 30 minuten:</span>
-                        <span class="speed-value" id="speed30Min">-</span>
-                    </div>
-                    <div class="speed-item">
-                        <span class="speed-label">Posts in laatste uur:</span>
-                        <span class="speed-value" id="speedLastHour">-</span>
-                    </div>
-                    <div class="speed-item">
-                        <span class="speed-label">Posts vandaag:</span>
-                        <span class="speed-value" id="speedToday">-</span>
-                    </div>
-                    <div class="speed-item">
-                        <span class="speed-label">Posts deze week:</span>
-                        <span class="speed-value" id="speedThisWeek">-</span>
-                    </div>
-                    <div class="speed-item">
-                        <span class="speed-label">Gemiddelde tijd tussen posts:</span>
-                        <span class="speed-value" id="avgTimeBetween">-</span>
-                    </div>
-                    <div class="speed-item highlight">
-                        <span class="speed-label">Laatste post:</span>
-                        <span class="speed-value" id="lastPostTime">-</span>
-                    </div>
-                    <div class="speed-note">
-                        💡 Deze data toont hoe actief Renny is op dit moment
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Actieve Topics NU sectie -->
-        <div class="active-topics-section">
-            <div class="active-topics-card">
-                <h3>🔥 Actieve Topics NU</h3>
-                <p class="section-subtitle">Topics waar Renny op dit moment actief is</p>
-                <div id="activeTopicsNowList" class="topics-list">
-                    <div class="loading-topics">Laden...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Nieuwe Statistieken Sectie -->
-        <div class="new-stats-section">
-            <!-- Meest Actieve Tijdstip -->
-            <div class="new-stat-card">
-                <h3>🕐 Meest Actieve Tijdstip</h3>
-                <p class="section-subtitle">Wanneer post Renny het meest?</p>
-                <div class="stat-detail">
-                    <div class="stat-detail-item">
-                        <span class="stat-detail-label">Meest actieve uur:</span>
-                        <span class="stat-detail-value" id="mostActiveHour">-</span>
-                    </div>
-                    <div class="stat-detail-item">
-                        <span class="stat-detail-label">Piekuren:</span>
-                        <span class="stat-detail-value" id="peakHours">-</span>
-                    </div>
-                    <canvas id="hourlyChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Meest Actieve Topic -->
-            <div class="new-stat-card">
-                <h3>🏆 Meest Actieve Topic (All-Time)</h3>
-                <p class="section-subtitle">Waar heeft Renny het meest gepost?</p>
-                <div id="mostActiveTopicInfo" class="topic-info-card">
-                    <div class="loading-topics">Laden...</div>
-                </div>
-                <div class="top-topics-list" id="topTopicsList">
-                    <div class="loading-topics">Laden...</div>
-                </div>
-            </div>
-
-            <!-- Response Time -->
-            <div class="new-stat-card">
-                <h3>⚡ Response Time</h3>
-                <p class="section-subtitle">Hoe snel reageert Renny op nieuwe topics?</p>
-                <div class="stat-detail">
-                    <div class="stat-detail-item highlight">
-                        <span class="stat-detail-label">Gemiddelde response time:</span>
-                        <span class="stat-detail-value" id="avgResponseTime">-</span>
-                    </div>
-                    <div class="stat-detail-item">
-                        <span class="stat-detail-label">Snelste response:</span>
-                        <span class="stat-detail-value" id="fastestResponse">-</span>
-                    </div>
-                    <div class="stat-detail-item">
-                        <span class="stat-detail-label">Analyses:</span>
-                        <span class="stat-detail-value" id="responseSamples">-</span>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <footer>
             <p>Dashboard gemaakt met ❤️ voor de Stamnummer3 community</p>
