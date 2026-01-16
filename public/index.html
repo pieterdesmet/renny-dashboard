@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renny Dashboard - Stamnummer3 Statistieken</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Renny Dashboard</h1>
+            <p class="subtitle">Live statistieken van Stamnummer3's meest actieve gebruiker</p>
+            <div class="last-updated" id="lastUpdated">Laden...</div>
+        </header>
+
+        <div class="stats-grid">
+            <!-- Totaal aantal berichten -->
+            <div class="stat-card primary">
+                <div class="stat-icon">💬</div>
+                <div class="stat-content">
+                    <h3>Totaal Berichten</h3>
+                    <div class="stat-value" id="totalPosts">-</div>
+                    <div class="stat-label">Sinds 2016</div>
+                </div>
+            </div>
+
+            <!-- Berichten per dag -->
+            <div class="stat-card secondary">
+                <div class="stat-icon">📈</div>
+                <div class="stat-content">
+                    <h3>Berichten per Dag</h3>
+                    <div class="stat-value" id="postsPerDay">-</div>
+                    <div class="stat-label">Gemiddeld</div>
+                </div>
+            </div>
+
+            <!-- Percentage van alle posts -->
+            <div class="stat-card accent">
+                <div class="stat-icon">🎯</div>
+                <div class="stat-content">
+                    <h3>Percentage van Forum</h3>
+                    <div class="stat-value" id="percentage">-</div>
+                    <div class="stat-label">Van alle berichten</div>
+                </div>
+            </div>
+
+            <!-- Been thanked -->
+            <div class="stat-card success">
+                <div class="stat-icon">👍</div>
+                <div class="stat-content">
+                    <h3>Bedankt Ontvangen</h3>
+                    <div class="stat-value" id="beenThanked">-</div>
+                    <div class="stat-label">Keer bedankt</div>
+                </div>
+            </div>
+
+            <!-- Has thanked -->
+            <div class="stat-card info">
+                <div class="stat-icon">🙏</div>
+                <div class="stat-content">
+                    <h3>Zelf Bedankt</h3>
+                    <div class="stat-value" id="hasThanked">-</div>
+                    <div class="stat-label">Keer bedankt</div>
+                </div>
+            </div>
+
+            <!-- Dagen actief -->
+            <div class="stat-card warning">
+                <div class="stat-icon">📅</div>
+                <div class="stat-content">
+                    <h3>Dagen Actief</h3>
+                    <div class="stat-value" id="daysActive">-</div>
+                    <div class="stat-label">Sinds lidmaatschap</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-card">
+                <h3>📌 Profiel Informatie</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Lid sinds:</span>
+                        <span class="info-value" id="joinedDate">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Laatst actief:</span>
+                        <span class="info-value" id="lastActive">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Profiel:</span>
+                        <a href="https://stamnummer3.be/memberlist.php?mode=viewprofile&u=77" target="_blank" class="info-link">Bekijk op Stamnummer3</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-card">
+                <h3>📊 Activiteit Visualisatie</h3>
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+
+        <footer>
+            <p>Dashboard gemaakt met ❤️ voor de Stamnummer3 community</p>
+            <p class="disclaimer">Data wordt automatisch bijgewerkt elke 5 minuten</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
