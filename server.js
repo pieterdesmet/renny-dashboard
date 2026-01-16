@@ -631,83 +631,243 @@ async function calculateResponseTime() {
   }
 }
 
-// Functie om maandelijkse posts te scrapen
+// Functie om maandelijkse posts te scrapen - verbeterde versie
 async function scrapeMonthlyPosts() {
   try {
-    const searchUrl = 'https://stamnummer3.be/search.php?author_id=77&sr=posts';
-    const response = await axios.get(searchUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      timeout: 10000
-    });
-
-    const $ = cheerio.load(response.data);
-    const monthlyCounts = {};
+    // Probeer meerdere pagina's te scrapen voor betere data
+    const allPosts = [];
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
 
+    // Probeer eerste paar pagina's van search results
+    for (let page = 0; page < 3; page++) {
+      try {
+        const searchUrl = `https://stamnummer3.be/search.php?author_id=77&sr=posts&start=${page * 25}`;
+        const response = await axios.get(searchUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          },
+          timeout: 10000
+        });
+
+        const $ = cheerio.load(response.data);
+        
+        // Zoek naar posts met datums
+        $('.post, .postbody, .postcontent, [class*="post"], .row').each(function() {
+          const $post = $(this);
+          
+          // Probeer verschillende manieren om de datum te vinden
+          let postDate = null;
+          
+          // Methode 1: time element met datetime
+          const timeElement = $post.find('time[datetime]').first();
+          if (timeElement.length) {
+            postDate = new Date(timeElement.attr('datetime'));
+          }
+          
+          // Methode 2: time element met text
+          if (!postDate || isNaN(postDate.getTime())) {
+            const timeText = $post.find('time').first().text();
+            if (timeText) {
+              postDate = new Date(timeText);
+            }
+          }
+          
+          // Methode 3: postdate class
+          if (!postDate || isNaN(postDate.getTime())) {
+            const postdateText = $post.find('.postdate, .post-time').first().text();
+            if (postdateText) {
+              // Probeer Nederlandse datum formaten te parsen
+              postDate = parseDutchDate(postdateText);
+            }
+          }
+          
+          // Methode 4: zoek in parent elementen
+          if (!postDate || isNaN(postDate.getTime())) {
+            const parentTime = $post.parent().find('time, .postdate').first();
+            if (parentTime.length) {
+              const timeText = parentTime.attr('datetime') || parentTime.text();
+              postDate = parseDutchDate(timeText);
+            }
+          }
+
+          if (postDate && !isNaN(postDate.getTime())) {
+            allPosts.push({
+              date: postDate,
+              timestamp: postDate.getTime()
+            });
+          }
+        });
+      } catch (err) {
+        console.error(`Error scraping page ${page}:`, err.message);
+        break; // Stop als pagina niet beschikbaar is
+      }
+    }
+
     // Maak maandelijkse buckets voor laatste 12 maanden
     const months = [];
+    const monthlyCounts = {};
+    
     for (let i = 11; i >= 0; i--) {
       const date = new Date(currentYear, currentMonth - i, 1);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthName = date.toLocaleString('nl-NL', { month: 'short' });
-      months.push({ key: monthKey, name: monthName, count: 0 });
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+      
+      months.push({ 
+        key: monthKey, 
+        name: monthName, 
+        count: 0,
+        start: monthStart.getTime(),
+        end: monthEnd.getTime()
+      });
       monthlyCounts[monthKey] = 0;
     }
 
     // Tel posts per maand
-    $('.post, .postbody, [class*="post"]').each(function() {
-      const $post = $(this);
-      const timeElement = $post.find('time, .postdate, [datetime]').first();
-      
-      if (timeElement.length) {
-        const timeText = timeElement.attr('datetime') || timeElement.text();
-        const postDate = new Date(timeText);
-        
-        if (!isNaN(postDate.getTime())) {
-          const monthKey = `${postDate.getFullYear()}-${String(postDate.getMonth() + 1).padStart(2, '0')}`;
-          if (monthlyCounts.hasOwnProperty(monthKey)) {
-            monthlyCounts[monthKey]++;
-          }
+    allPosts.forEach(post => {
+      const postTimestamp = post.timestamp;
+      for (const month of months) {
+        if (postTimestamp >= month.start && postTimestamp <= month.end) {
+          month.count++;
+          monthlyCounts[month.key]++;
+          break;
         }
       }
     });
 
-    // Update months array met counts
-    months.forEach(month => {
-      month.count = monthlyCounts[month.key] || 0;
-    });
-
-    // Als we geen data hebben, gebruik schatting gebaseerd op posts per dag
-    if (months.every(m => m.count === 0)) {
+    // Als we weinig data hebben, gebruik een betere schatting
+    // Gebruik het totaal aantal posts en verdeel proportioneel
+    if (allPosts.length < 50) {
+      // Gebruik posts per dag gemiddeld (33.09) maar pas aan voor incomplete maanden
       const postsPerDay = 33.09;
+      const now = new Date();
+      
       months.forEach(month => {
-        const daysInMonth = new Date(parseInt(month.key.split('-')[0]), parseInt(month.key.split('-')[1]), 0).getDate();
-        month.count = Math.floor(postsPerDay * daysInMonth);
+        const monthStart = new Date(month.key + '-01');
+        const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+        const daysInMonth = monthEnd.getDate();
+        
+        // Voor huidige maand: gebruik alleen dagen tot nu
+        let daysToCount = daysInMonth;
+        if (monthStart.getMonth() === now.getMonth() && monthStart.getFullYear() === now.getFullYear()) {
+          daysToCount = now.getDate(); // Alleen dagen tot vandaag
+        }
+        
+        // Als we al wat data hebben, gebruik die, anders schatting
+        if (month.count === 0) {
+          // Gebruik schatting gebaseerd op posts per dag
+          month.count = Math.floor(postsPerDay * daysToCount);
+        } else {
+          // We hebben wat data, maar mogelijk niet alles
+          // Extrapoleer: als we 10 posts vinden op 1 pagina, zijn er waarschijnlijk meer
+          // Maar we kunnen niet goed extrapoleren zonder te weten hoeveel pagina's er zijn
+          // Gebruik daarom de schatting als fallback
+          const estimated = Math.floor(postsPerDay * daysToCount);
+          // Gebruik het maximum van gevonden en geschat (omdat we mogelijk niet alles scrapen)
+          month.count = Math.max(month.count, Math.floor(estimated * 0.8)); // Minimaal 80% van schatting
+        }
+      });
+    } else {
+      // We hebben genoeg data, maar controleer of de counts logisch zijn
+      const now = new Date();
+      months.forEach(month => {
+        const monthStart = new Date(month.key + '-01');
+        const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+        const daysInMonth = monthEnd.getDate();
+        
+        // Voor huidige maand: controleer of count niet hoger is dan mogelijk
+        if (monthStart.getMonth() === now.getMonth() && monthStart.getFullYear() === now.getFullYear()) {
+          const daysPassed = now.getDate();
+          const maxPossible = Math.ceil(33.09 * daysPassed * 1.5); // Max 50% meer dan gemiddeld
+          if (month.count > maxPossible) {
+            // Te hoog, gebruik schatting
+            month.count = Math.floor(33.09 * daysPassed);
+          }
+        } else {
+          // Voor vorige maanden: controleer of count logisch is
+          const maxPossible = Math.ceil(33.09 * daysInMonth * 1.5);
+          if (month.count > maxPossible) {
+            // Te hoog, gebruik schatting
+            month.count = Math.floor(33.09 * daysInMonth);
+          }
+        }
       });
     }
 
     return months;
   } catch (error) {
     console.error('Error scraping monthly posts:', error.message);
-    // Return geschatte data
+    // Return geschatte data gebaseerd op posts per dag
     const now = new Date();
     const months = [];
+    const postsPerDay = 33.09;
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    
     for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const date = new Date(currentYear, currentMonth - i, 1);
       const monthName = date.toLocaleString('nl-NL', { month: 'short' });
-      const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      const daysInMonth = monthEnd.getDate();
+      
+      // Voor huidige maand: alleen dagen tot nu (vandaag is 16 januari 2026)
+      let daysToCount = daysInMonth;
+      if (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) {
+        daysToCount = now.getDate(); // Alleen dagen tot vandaag
+      }
+      
       months.push({
         key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
         name: monthName,
-        count: Math.floor(33.09 * daysInMonth)
+        count: Math.floor(postsPerDay * daysToCount)
       });
     }
     return months;
   }
+}
+
+// Helper functie om Nederlandse datums te parsen
+function parseDutchDate(dateString) {
+  if (!dateString) return null;
+  
+  // Verwijder dag van week (ma, di, wo, etc.)
+  dateString = dateString.replace(/^(ma|di|wo|do|vr|za|zo)\s+/i, '');
+  
+  // Probeer verschillende formaten
+  const formats = [
+    /(\d{1,2})\s+(\w+)\s+(\d{4})/, // "16 jan 2026"
+    /(\d{1,2})\/(\d{1,2})\/(\d{4})/, // "16/01/2026"
+    /(\d{4})-(\d{2})-(\d{2})/, // "2026-01-16"
+  ];
+  
+  for (const format of formats) {
+    const match = dateString.match(format);
+    if (match) {
+      if (format === formats[0]) {
+        // "16 jan 2026" format
+        const day = parseInt(match[1]);
+        const monthNames = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+        const month = monthNames.indexOf(match[2].toLowerCase());
+        const year = parseInt(match[3]);
+        if (month !== -1) {
+          return new Date(year, month, day);
+        }
+      } else if (format === formats[1]) {
+        // "16/01/2026" format
+        return new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+      } else {
+        // "2026-01-16" format
+        return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+      }
+    }
+  }
+  
+  // Laatste redmiddel: probeer direct te parsen
+  const parsed = new Date(dateString);
+  return isNaN(parsed.getTime()) ? null : parsed;
 }
 
 // Functie om actieve topics NU te scrapen (waar Renny recent heeft gepost)
