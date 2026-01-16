@@ -1,4 +1,5 @@
 let activityChart = null;
+let hourlyChart = null;
 
 // Format grote nummers
 function formatNumber(num) {
@@ -79,6 +80,150 @@ function updateDashboard(data) {
     
     // Update actieve topics NU
     updateActiveTopicsNow(stats.activeTopicsNow || []);
+    
+    // Update nieuwe statistieken
+    updateMostActiveTimeOfDay(stats.mostActiveTimeOfDay);
+    updateMostActiveTopic(stats.mostActiveTopic, stats.topTopics);
+    updateResponseTime(stats.responseTime);
+}
+
+// Update meest actieve tijdstip
+function updateMostActiveTimeOfDay(data) {
+    if (!data || !data.mostActiveHour) {
+        document.getElementById('mostActiveHour').textContent = 'N/A';
+        document.getElementById('peakHours').textContent = 'N/A';
+        return;
+    }
+
+    document.getElementById('mostActiveHour').textContent = data.mostActiveHourFormatted || `${data.mostActiveHour}:00 - ${data.mostActiveHour + 1}:00`;
+    
+    if (data.peakHours && data.peakHours.length > 0) {
+        const peakHoursStr = data.peakHours.map(h => `${h}:00`).join(', ');
+        document.getElementById('peakHours').textContent = peakHoursStr;
+    } else {
+        document.getElementById('peakHours').textContent = 'N/A';
+    }
+
+    // Update hourly chart
+    if (data.hourlyDistribution && data.hourlyDistribution.length > 0) {
+        updateHourlyChart(data.hourlyDistribution);
+    }
+}
+
+// Update hourly chart
+function updateHourlyChart(hourlyData) {
+    const ctx = document.getElementById('hourlyChart');
+    if (!ctx) return;
+
+    if (hourlyChart) {
+        hourlyChart.destroy();
+    }
+
+    hourlyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: hourlyData.map(d => `${d.hour}:00`),
+            datasets: [{
+                label: 'Posts per uur',
+                data: hourlyData.map(d => d.count),
+                backgroundColor: 'rgba(96, 165, 250, 0.6)',
+                borderColor: '#60a5fa',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2.5,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleColor: '#f1f5f9',
+                    bodyColor: '#cbd5e1',
+                    borderColor: '#334155',
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: '#cbd5e1',
+                        maxRotation: 45,
+                        minRotation: 45
+                    },
+                    grid: {
+                        color: 'rgba(51, 65, 85, 0.3)'
+                    }
+                },
+                y: {
+                    ticks: {
+                        color: '#cbd5e1'
+                    },
+                    grid: {
+                        color: 'rgba(51, 65, 85, 0.3)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Update meest actieve topic
+function updateMostActiveTopic(mostActiveTopic, topTopics) {
+    const topicInfo = document.getElementById('mostActiveTopicInfo');
+    const topTopicsList = document.getElementById('topTopicsList');
+
+    if (!mostActiveTopic && (!topTopics || topTopics.length === 0)) {
+        topicInfo.innerHTML = '<div class="loading-topics">Geen data beschikbaar</div>';
+        topTopicsList.innerHTML = '<div class="loading-topics">Geen data beschikbaar</div>';
+        return;
+    }
+
+    if (mostActiveTopic) {
+        topicInfo.innerHTML = `
+            <div class="topic-info-card-content">
+                <a href="${mostActiveTopic.url || '#'}" target="_blank" class="topic-title-large">
+                    ${mostActiveTopic.title || 'Onbekend topic'}
+                </a>
+                <div class="topic-stats">
+                    <span class="topic-stat-badge">${formatNumber(mostActiveTopic.count)} posts</span>
+                </div>
+            </div>
+        `;
+    } else {
+        topicInfo.innerHTML = '<div class="loading-topics">Geen data beschikbaar</div>';
+    }
+
+    if (topTopics && topTopics.length > 0) {
+        topTopicsList.innerHTML = topTopics.map((topic, index) => `
+            <div class="top-topic-item">
+                <span class="top-topic-rank">#${index + 1}</span>
+                <a href="${topic.url || '#'}" target="_blank" class="top-topic-title">
+                    ${topic.title || 'Onbekend topic'}
+                </a>
+                <span class="top-topic-count">${formatNumber(topic.count)} posts</span>
+            </div>
+        `).join('');
+    } else {
+        topTopicsList.innerHTML = '<div class="loading-topics">Geen data beschikbaar</div>';
+    }
+}
+
+// Update response time
+function updateResponseTime(responseTime) {
+    if (!responseTime) {
+        document.getElementById('avgResponseTime').textContent = 'N/A';
+        document.getElementById('fastestResponse').textContent = 'N/A';
+        document.getElementById('responseSamples').textContent = '0';
+        return;
+    }
+
+    document.getElementById('avgResponseTime').textContent = responseTime.averageResponseTimeFormatted || 'N/A';
+    document.getElementById('fastestResponse').textContent = responseTime.fastestResponse ? `${responseTime.fastestResponse} minuten` : 'N/A';
+    document.getElementById('responseSamples').textContent = responseTime.samplesAnalyzed || 0;
 }
 
 // Update actieve topics NU list
@@ -117,13 +262,30 @@ function updateChart(stats) {
         activityChart.destroy();
     }
     
-    // Simuleer maandelijkse data (in productie zou je historische data hebben)
-    const months = ['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
-    const monthlyPosts = months.map(() => {
-        // Simuleer variatie rond het gemiddelde
-        const base = stats.postsPerDay || stats.averagePostsPerDay || 30;
-        return Math.floor(base * 30 * (0.8 + Math.random() * 0.4));
-    });
+    // Gebruik echte maandelijkse data
+    let months = [];
+    let monthlyPosts = [];
+    
+    if (stats.monthlyPosts && stats.monthlyPosts.length > 0) {
+        // Gebruik echte data
+        months = stats.monthlyPosts.map(m => m.name);
+        monthlyPosts = stats.monthlyPosts.map(m => m.count);
+    } else {
+        // Fallback: genereer data tot en met januari
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date(currentYear, currentMonth - i, 1);
+            months.push(date.toLocaleString('nl-NL', { month: 'short' }));
+            
+            // Schatting gebaseerd op posts per dag
+            const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+            const base = stats.postsPerDay || stats.averagePostsPerDay || 33.09;
+            monthlyPosts.push(Math.floor(base * daysInMonth));
+        }
+    }
     
     activityChart = new Chart(ctx, {
         type: 'line',

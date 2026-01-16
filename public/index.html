@@ -193,6 +193,58 @@
             </div>
         </div>
 
+        <!-- Nieuwe Statistieken Sectie -->
+        <div class="new-stats-section">
+            <!-- Meest Actieve Tijdstip -->
+            <div class="new-stat-card">
+                <h3>🕐 Meest Actieve Tijdstip</h3>
+                <p class="section-subtitle">Wanneer post Renny het meest?</p>
+                <div class="stat-detail">
+                    <div class="stat-detail-item">
+                        <span class="stat-detail-label">Meest actieve uur:</span>
+                        <span class="stat-detail-value" id="mostActiveHour">-</span>
+                    </div>
+                    <div class="stat-detail-item">
+                        <span class="stat-detail-label">Piekuren:</span>
+                        <span class="stat-detail-value" id="peakHours">-</span>
+                    </div>
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Meest Actieve Topic -->
+            <div class="new-stat-card">
+                <h3>🏆 Meest Actieve Topic (All-Time)</h3>
+                <p class="section-subtitle">Waar heeft Renny het meest gepost?</p>
+                <div id="mostActiveTopicInfo" class="topic-info-card">
+                    <div class="loading-topics">Laden...</div>
+                </div>
+                <div class="top-topics-list" id="topTopicsList">
+                    <div class="loading-topics">Laden...</div>
+                </div>
+            </div>
+
+            <!-- Response Time -->
+            <div class="new-stat-card">
+                <h3>⚡ Response Time</h3>
+                <p class="section-subtitle">Hoe snel reageert Renny op nieuwe topics?</p>
+                <div class="stat-detail">
+                    <div class="stat-detail-item highlight">
+                        <span class="stat-detail-label">Gemiddelde response time:</span>
+                        <span class="stat-detail-value" id="avgResponseTime">-</span>
+                    </div>
+                    <div class="stat-detail-item">
+                        <span class="stat-detail-label">Snelste response:</span>
+                        <span class="stat-detail-value" id="fastestResponse">-</span>
+                    </div>
+                    <div class="stat-detail-item">
+                        <span class="stat-detail-label">Analyses:</span>
+                        <span class="stat-detail-value" id="responseSamples">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <footer>
             <p>Dashboard gemaakt met ❤️ voor de Stamnummer3 community</p>
             <p class="disclaimer">Data wordt automatisch bijgewerkt elke 5 minuten</p>
