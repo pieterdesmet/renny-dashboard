@@ -32,7 +32,6 @@ function updateDashboard(data) {
     // Update nieuwe statistieken
     document.getElementById('postsIn30Min').textContent = stats.postsInLast30Min || 0;
     document.getElementById('postsToday').textContent = stats.postsToday || 0;
-    document.getElementById('postsPerHour').textContent = stats.postsPerHour || 0;
     document.getElementById('activeTopics').textContent = stats.totalActiveTopics || 0;
     
     // Update speed stats
