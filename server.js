@@ -251,8 +251,16 @@ async function scrapeRennyProfile() {
         beenThanked: 37150,
         daysSinceJoined: 3650,
         averagePostsPerDay: 33.09,
-        postsInLast10Min: 0,
+        postsInLast30Min: 0,
+        postsInLastHour: 0,
+        postsToday: 0,
+        postsThisWeek: 0,
+        postsPerHour: 0,
+        lastPostTime: null,
+        lastPostTimeFormatted: null,
+        avgTimeBetweenPosts: null,
         topics: [],
+        activeTopicsNow: [],
         totalActiveTopics: 0
       };
     }
@@ -262,8 +270,13 @@ async function scrapeRennyProfile() {
     if (!data.stats.beenThanked) data.stats.beenThanked = 37150;
     
     // Initialiseer nieuwe velden
-    if (!data.stats.postsInLast10Min) data.stats.postsInLast10Min = 0;
+    if (!data.stats.postsInLast30Min) data.stats.postsInLast30Min = 0;
+    if (!data.stats.postsInLastHour) data.stats.postsInLastHour = 0;
+    if (!data.stats.postsToday) data.stats.postsToday = 0;
+    if (!data.stats.postsThisWeek) data.stats.postsThisWeek = 0;
+    if (!data.stats.postsPerHour) data.stats.postsPerHour = 0;
     if (!data.stats.topics) data.stats.topics = [];
+    if (!data.stats.activeTopicsNow) data.stats.activeTopicsNow = [];
     if (!data.stats.totalActiveTopics) data.stats.totalActiveTopics = 0;
 
     return data;
@@ -284,8 +297,16 @@ async function scrapeRennyProfile() {
         beenThanked: 37150,
         daysSinceJoined: 3650,
         averagePostsPerDay: 33.09,
-        postsInLast10Min: 0,
+        postsInLast30Min: 0,
+        postsInLastHour: 0,
+        postsToday: 0,
+        postsThisWeek: 0,
+        postsPerHour: 0,
+        lastPostTime: null,
+        lastPostTimeFormatted: null,
+        avgTimeBetweenPosts: null,
         topics: [],
+        activeTopicsNow: [],
         totalActiveTopics: 0
       },
       error: 'Using cached/fallback data'
@@ -305,7 +326,10 @@ async function scrapeRecentPosts() {
 
     let posts = [];
     const now = new Date();
-    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     for (const searchUrl of searchUrls) {
       try {
@@ -346,10 +370,11 @@ async function scrapeRecentPosts() {
           }
 
           // Als we een recente post vinden
-          if (postTime && postTime > tenMinutesAgo) {
+          if (postTime && !isNaN(postTime.getTime())) {
             posts.push({
               time: postTime.toISOString(),
-              text: postText.substring(0, 100)
+              text: postText.substring(0, 100),
+              timestamp: postTime.getTime()
             });
           }
         });
@@ -362,29 +387,155 @@ async function scrapeRecentPosts() {
       }
     }
 
+    // Sorteer posts op tijd (nieuwste eerst)
+    posts.sort((a, b) => b.timestamp - a.timestamp);
+    
+    // Bereken verschillende tijdvensters
+    const postsLast30Min = posts.filter(p => new Date(p.time) > thirtyMinutesAgo).length;
+    const postsLastHour = posts.filter(p => new Date(p.time) > oneHourAgo).length;
+    const postsToday = posts.filter(p => new Date(p.time) > todayStart).length;
+    const postsThisWeek = posts.filter(p => new Date(p.time) > weekStart).length;
+    
+    // Vind laatste post tijd
+    let lastPostTime = null;
+    if (posts.length > 0) {
+      lastPostTime = new Date(posts[0].time);
+    }
+    
+    // Bereken gemiddelde tijd tussen posts (in minuten)
+    let avgTimeBetweenPosts = null;
+    if (posts.length >= 2) {
+      const timeDiffs = [];
+      for (let i = 0; i < posts.length - 1; i++) {
+        const diff = (posts[i].timestamp - posts[i + 1].timestamp) / (1000 * 60); // in minuten
+        if (diff < 1440) { // Alleen posts binnen 24 uur van elkaar
+          timeDiffs.push(diff);
+        }
+      }
+      if (timeDiffs.length > 0) {
+        avgTimeBetweenPosts = (timeDiffs.reduce((a, b) => a + b, 0) / timeDiffs.length).toFixed(1);
+      }
+    }
+    
+    // Bereken posts per uur (gebaseerd op laatste uur)
+    const postsPerHour = postsLastHour;
+    
     // Simuleer wat posts als we niets vinden (voor demo)
-    // In productie zou je dit niet doen
     if (posts.length === 0) {
-      // Gebruik een schatting gebaseerd op posts per dag
-      const estimatedPosts = Math.floor((33.09 / 144) * 10); // ~33 posts/dag = ~0.23 posts/min = ~2.3 posts/10min
+      const estimated30Min = Math.floor((33.09 / 144) * 30); // ~7 posts in 30 min
       return {
-        postsInLast10Min: estimatedPosts,
+        postsInLast30Min: estimated30Min,
+        postsInLastHour: Math.floor((33.09 / 24)),
+        postsToday: 33,
+        postsThisWeek: 33 * 7,
+        lastPostTime: null,
+        avgTimeBetweenPosts: null,
+        postsPerHour: Math.floor((33.09 / 24)),
         recentPosts: [],
         note: 'Estimated based on average'
       };
     }
 
     return {
-      postsInLast10Min: posts.length,
+      postsInLast30Min: postsLast30Min,
+      postsInLastHour: postsLastHour,
+      postsToday: postsToday,
+      postsThisWeek: postsThisWeek,
+      lastPostTime: lastPostTime ? lastPostTime.toISOString() : null,
+      lastPostTimeFormatted: lastPostTime ? lastPostTime.toLocaleString('nl-NL') : null,
+      avgTimeBetweenPosts: avgTimeBetweenPosts,
+      postsPerHour: postsPerHour,
       recentPosts: posts.slice(0, 10)
     };
   } catch (error) {
     console.error('Error scraping recent posts:', error.message);
     return {
-      postsInLast10Min: 0,
+      postsInLast30Min: 0,
+      postsInLastHour: 0,
+      postsToday: 0,
+      postsThisWeek: 0,
+      lastPostTime: null,
+      lastPostTimeFormatted: null,
+      avgTimeBetweenPosts: null,
+      postsPerHour: 0,
       recentPosts: [],
       error: 'Could not fetch recent posts'
     };
+  }
+}
+
+// Functie om actieve topics NU te scrapen (waar Renny recent heeft gepost)
+async function scrapeActiveTopicsNow() {
+  try {
+    const searchUrl = 'https://stamnummer3.be/search.php?author_id=77&sr=posts&sk=t&sd=d';
+    const response = await axios.get(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      timeout: 10000
+    });
+
+    const $ = cheerio.load(response.data);
+    const activeTopics = [];
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const seenTopics = new Set();
+
+    // Extract recente topics waar Renny heeft gepost
+    $('a[href*="viewtopic"], a[href*="t="]').each(function() {
+      const $link = $(this);
+      let topicLink = $link.attr('href');
+      let topicTitle = $link.text().trim();
+      
+      if (topicLink && topicTitle && topicTitle.length > 3) {
+        if (!topicLink.startsWith('http')) {
+          topicLink = topicLink.startsWith('/') 
+            ? `https://stamnummer3.be${topicLink}`
+            : `https://stamnummer3.be/${topicLink}`;
+        }
+        
+        const topicIdMatch = topicLink.match(/[t=](\d+)/);
+        const topicId = topicIdMatch ? topicIdMatch[1] : topicLink;
+        
+        if (!seenTopics.has(topicId)) {
+          seenTopics.add(topicId);
+          
+          // Probeer tijd te vinden
+          const $parent = $link.closest('.post, .row, .topic');
+          let postTime = null;
+          $parent.find('time, .postdate, [datetime]').each(function() {
+            const timeText = $(this).attr('datetime') || $(this).text();
+            const parsed = new Date(timeText);
+            if (!isNaN(parsed.getTime()) && parsed > oneHourAgo) {
+              postTime = parsed;
+            }
+          });
+          
+          activeTopics.push({
+            id: topicId,
+            title: topicTitle,
+            url: topicLink,
+            lastPostTime: postTime ? postTime.toISOString() : null,
+            isActiveNow: postTime !== null
+          });
+        }
+      }
+    });
+
+    // Sorteer op activiteit (meest recent eerst)
+    activeTopics.sort((a, b) => {
+      if (a.isActiveNow && !b.isActiveNow) return -1;
+      if (!a.isActiveNow && b.isActiveNow) return 1;
+      if (a.lastPostTime && b.lastPostTime) {
+        return new Date(b.lastPostTime) - new Date(a.lastPostTime);
+      }
+      return 0;
+    });
+
+    return activeTopics.slice(0, 10); // Top 10 meest actieve topics
+  } catch (error) {
+    console.error('Error scraping active topics:', error.message);
+    return [];
   }
 }
 
@@ -520,16 +671,45 @@ app.get('/api/renny', async (req, res) => {
     try {
       const recentPosts = await scrapeRecentPosts();
       const topics = await scrapeTopics();
+      const activeTopicsNow = await scrapeActiveTopicsNow();
       
-      data.stats.postsInLast10Min = recentPosts.postsInLast10Min;
-      data.stats.recentPosts = recentPosts.recentPosts;
+      // Update met nieuwe statistieken
+      data.stats.postsInLast30Min = recentPosts.postsInLast30Min || 0;
+      data.stats.postsInLastHour = recentPosts.postsInLastHour || 0;
+      data.stats.postsToday = recentPosts.postsToday || 0;
+      data.stats.postsThisWeek = recentPosts.postsThisWeek || 0;
+      data.stats.lastPostTime = recentPosts.lastPostTime;
+      data.stats.lastPostTimeFormatted = recentPosts.lastPostTimeFormatted;
+      data.stats.avgTimeBetweenPosts = recentPosts.avgTimeBetweenPosts;
+      data.stats.postsPerHour = recentPosts.postsPerHour || 0;
+      
+      data.stats.recentPosts = recentPosts.recentPosts || [];
       data.stats.topics = topics.slice(0, 5); // Top 5 topics
+      data.stats.activeTopicsNow = activeTopicsNow.slice(0, 5); // Top 5 actieve topics NU
       data.stats.totalActiveTopics = topics.length;
+      
+      // Bereken extra statistieken
+      data.stats.postsPerMinute = data.stats.postsInLast30Min > 0 
+        ? (data.stats.postsInLast30Min / 30).toFixed(2) 
+        : 0;
+      data.stats.estimatedPostsToday = data.stats.postsPerHour * 24;
+      data.stats.activityLevel = data.stats.postsInLast30Min > 10 ? 'Extreem Actief' 
+        : data.stats.postsInLast30Min > 5 ? 'Zeer Actief'
+        : data.stats.postsInLast30Min > 2 ? 'Actief'
+        : 'Normaal';
     } catch (error) {
       console.error('Error fetching additional stats:', error);
       // Gebruik fallback
-      data.stats.postsInLast10Min = 0;
+      data.stats.postsInLast30Min = 0;
+      data.stats.postsInLastHour = 0;
+      data.stats.postsToday = 0;
+      data.stats.postsThisWeek = 0;
+      data.stats.lastPostTime = null;
+      data.stats.lastPostTimeFormatted = null;
+      data.stats.avgTimeBetweenPosts = null;
+      data.stats.postsPerHour = 0;
       data.stats.topics = [];
+      data.stats.activeTopicsNow = [];
       data.stats.totalActiveTopics = 0;
     }
     

@@ -30,13 +30,38 @@ function updateDashboard(data) {
     document.getElementById('daysActive').textContent = formatNumber(stats.daysSinceJoined || 0);
     
     // Update nieuwe statistieken
-    document.getElementById('postsIn10Min').textContent = stats.postsInLast10Min || 0;
+    document.getElementById('postsIn30Min').textContent = stats.postsInLast30Min || 0;
+    document.getElementById('postsToday').textContent = stats.postsToday || 0;
+    document.getElementById('postsPerHour').textContent = stats.postsPerHour || 0;
     document.getElementById('activeTopics').textContent = stats.totalActiveTopics || 0;
     
     // Update speed stats
-    document.getElementById('speed10Min').textContent = stats.postsInLast10Min || 0;
-    const postsPerHour = (stats.postsInLast10Min || 0) * 6; // Extrapoleer naar uur
-    document.getElementById('speedPerHour').textContent = postsPerHour + ' posts/uur';
+    document.getElementById('speed30Min').textContent = stats.postsInLast30Min || 0;
+    document.getElementById('speedLastHour').textContent = stats.postsInLastHour || 0;
+    document.getElementById('speedToday').textContent = stats.postsToday || 0;
+    document.getElementById('speedThisWeek').textContent = formatNumber(stats.postsThisWeek || 0);
+    
+    // Update gemiddelde tijd tussen posts
+    if (stats.avgTimeBetweenPosts) {
+      const avgTime = parseFloat(stats.avgTimeBetweenPosts);
+      if (avgTime < 60) {
+        document.getElementById('avgTimeBetween').textContent = avgTime.toFixed(1) + ' min';
+      } else {
+        document.getElementById('avgTimeBetween').textContent = (avgTime / 60).toFixed(1) + ' uur';
+      }
+    } else {
+      document.getElementById('avgTimeBetween').textContent = '-';
+    }
+    
+    // Update laatste post tijd
+    if (stats.lastPostTimeFormatted) {
+      document.getElementById('lastPostTime').textContent = stats.lastPostTimeFormatted;
+    } else if (stats.lastPostTime) {
+      const lastPost = new Date(stats.lastPostTime);
+      document.getElementById('lastPostTime').textContent = lastPost.toLocaleString('nl-NL');
+    } else {
+      document.getElementById('lastPostTime').textContent = 'Onbekend';
+    }
     
     // Update info section
     document.getElementById('joinedDate').textContent = stats.joinedDate || '-';
@@ -52,6 +77,37 @@ function updateDashboard(data) {
     
     // Update topics list
     updateTopicsList(stats.topics || []);
+    
+    // Update actieve topics NU
+    updateActiveTopicsNow(stats.activeTopicsNow || []);
+}
+
+// Update actieve topics NU list
+function updateActiveTopicsNow(topics) {
+    const topicsList = document.getElementById('activeTopicsNowList');
+    
+    if (!topics || topics.length === 0) {
+        topicsList.innerHTML = '<div class="loading-topics">Geen actieve topics gevonden op dit moment...</div>';
+        return;
+    }
+    
+    topicsList.innerHTML = topics.map(topic => {
+        const title = topic.title || 'Onbekend topic';
+        const url = topic.url || '#';
+        const lastPostTime = topic.lastPostTime ? new Date(topic.lastPostTime).toLocaleString('nl-NL') : 'Onbekend';
+        const isActive = topic.isActiveNow ? '🔥' : '';
+        
+        return `
+            <div class="topic-item ${topic.isActiveNow ? 'active-now' : ''}">
+                <div class="topic-info">
+                    <a href="${url}" target="_blank" class="topic-title" title="${title}">
+                        ${isActive} ${title.length > 50 ? title.substring(0, 50) + '...' : title}
+                    </a>
+                    <div class="topic-meta">Laatste post: ${lastPostTime}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 // Update chart

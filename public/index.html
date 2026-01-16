@@ -76,13 +76,33 @@
                 </div>
             </div>
 
-            <!-- Posts in laatste 10 minuten -->
+            <!-- Posts in laatste 30 minuten -->
             <div class="stat-card speed">
                 <div class="stat-icon">⚡</div>
                 <div class="stat-content">
-                    <h3>Posts Laatste 10 Min</h3>
-                    <div class="stat-value" id="postsIn10Min">-</div>
+                    <h3>Posts Laatste 30 Min</h3>
+                    <div class="stat-value" id="postsIn30Min">-</div>
                     <div class="stat-label">Live posting speed</div>
+                </div>
+            </div>
+
+            <!-- Posts vandaag -->
+            <div class="stat-card today">
+                <div class="stat-icon">📅</div>
+                <div class="stat-content">
+                    <h3>Posts Vandaag</h3>
+                    <div class="stat-value" id="postsToday">-</div>
+                    <div class="stat-label">Tot nu toe</div>
+                </div>
+            </div>
+
+            <!-- Posts per uur -->
+            <div class="stat-card hourly">
+                <div class="stat-icon">⏰</div>
+                <div class="stat-content">
+                    <h3>Posts per Uur</h3>
+                    <div class="stat-value" id="postsPerHour">-</div>
+                    <div class="stat-label">Gemiddeld</div>
                 </div>
             </div>
 
@@ -139,19 +159,46 @@
         <div class="speed-section">
             <div class="speed-card">
                 <h3>⚡ Posting Speed Analyse</h3>
-                <p class="section-subtitle">Hoe snel post Renny achter elkaar?</p>
+                <p class="section-subtitle">Gedetailleerde activiteit statistieken</p>
                 <div class="speed-stats">
                     <div class="speed-item">
-                        <span class="speed-label">Posts in laatste 10 minuten:</span>
-                        <span class="speed-value" id="speed10Min">-</span>
+                        <span class="speed-label">Posts in laatste 30 minuten:</span>
+                        <span class="speed-value" id="speed30Min">-</span>
                     </div>
                     <div class="speed-item">
-                        <span class="speed-label">Gemiddeld per uur:</span>
-                        <span class="speed-value" id="speedPerHour">-</span>
+                        <span class="speed-label">Posts in laatste uur:</span>
+                        <span class="speed-value" id="speedLastHour">-</span>
+                    </div>
+                    <div class="speed-item">
+                        <span class="speed-label">Posts vandaag:</span>
+                        <span class="speed-value" id="speedToday">-</span>
+                    </div>
+                    <div class="speed-item">
+                        <span class="speed-label">Posts deze week:</span>
+                        <span class="speed-value" id="speedThisWeek">-</span>
+                    </div>
+                    <div class="speed-item">
+                        <span class="speed-label">Gemiddelde tijd tussen posts:</span>
+                        <span class="speed-value" id="avgTimeBetween">-</span>
+                    </div>
+                    <div class="speed-item highlight">
+                        <span class="speed-label">Laatste post:</span>
+                        <span class="speed-value" id="lastPostTime">-</span>
                     </div>
                     <div class="speed-note">
                         💡 Deze data toont hoe actief Renny is op dit moment
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actieve Topics NU sectie -->
+        <div class="active-topics-section">
+            <div class="active-topics-card">
+                <h3>🔥 Actieve Topics NU</h3>
+                <p class="section-subtitle">Topics waar Renny op dit moment actief is</p>
+                <div id="activeTopicsNowList" class="topics-list">
+                    <div class="loading-topics">Laden...</div>
                 </div>
             </div>
         </div>

@@ -139,6 +139,14 @@ header h1 {
     background: #ef4444;
 }
 
+.stat-card.today::before {
+    background: #10b981;
+}
+
+.stat-card.hourly::before {
+    background: #06b6d4;
+}
+
 .stat-icon {
     font-size: 3rem;
     opacity: 0.9;
@@ -428,4 +436,45 @@ footer p {
     border-radius: 8px;
     color: var(--text-secondary);
     font-size: 0.9rem;
+}
+
+.speed-item.highlight {
+    background: rgba(37, 99, 235, 0.1);
+    border-left: 4px solid var(--primary-color);
+}
+
+/* Active topics section */
+.active-topics-section {
+    margin-bottom: 30px;
+}
+
+.active-topics-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid var(--border-color);
+}
+
+.active-topics-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.topic-item.active-now {
+    border-color: var(--accent-color);
+    background: rgba(220, 38, 38, 0.05);
+}
+
+.topic-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.topic-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
 }
