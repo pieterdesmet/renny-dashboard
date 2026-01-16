@@ -29,6 +29,15 @@ function updateDashboard(data) {
     document.getElementById('hasThanked').textContent = formatNumber(stats.hasThanked || 0);
     document.getElementById('daysActive').textContent = formatNumber(stats.daysSinceJoined || 0);
     
+    // Update nieuwe statistieken
+    document.getElementById('postsIn10Min').textContent = stats.postsInLast10Min || 0;
+    document.getElementById('activeTopics').textContent = stats.totalActiveTopics || 0;
+    
+    // Update speed stats
+    document.getElementById('speed10Min').textContent = stats.postsInLast10Min || 0;
+    const postsPerHour = (stats.postsInLast10Min || 0) * 6; // Extrapoleer naar uur
+    document.getElementById('speedPerHour').textContent = postsPerHour + ' posts/uur';
+    
     // Update info section
     document.getElementById('joinedDate').textContent = stats.joinedDate || '-';
     document.getElementById('lastActive').textContent = stats.lastActive || '-';
@@ -40,6 +49,9 @@ function updateDashboard(data) {
     
     // Update chart
     updateChart(stats);
+    
+    // Update topics list
+    updateTopicsList(stats.topics || []);
 }
 
 // Update chart
@@ -124,6 +136,31 @@ function updateChart(stats) {
             }
         }
     });
+}
+
+// Update topics list
+function updateTopicsList(topics) {
+    const topicsList = document.getElementById('topicsList');
+    
+    if (!topics || topics.length === 0) {
+        topicsList.innerHTML = '<div class="loading-topics">Geen topics gevonden of data wordt nog geladen...</div>';
+        return;
+    }
+    
+    topicsList.innerHTML = topics.map(topic => {
+        const title = topic.title || 'Onbekend topic';
+        const count = topic.postCount || 0;
+        const url = topic.url || '#';
+        
+        return `
+            <div class="topic-item">
+                <a href="${url}" target="_blank" class="topic-title" title="${title}">
+                    ${title.length > 60 ? title.substring(0, 60) + '...' : title}
+                </a>
+                <span class="topic-count">${count} posts</span>
+            </div>
+        `;
+    }).join('');
 }
 
 // Fetch data van API

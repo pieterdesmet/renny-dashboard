@@ -75,6 +75,26 @@
                     <div class="stat-label">Sinds lidmaatschap</div>
                 </div>
             </div>
+
+            <!-- Posts in laatste 10 minuten -->
+            <div class="stat-card speed">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-content">
+                    <h3>Posts Laatste 10 Min</h3>
+                    <div class="stat-value" id="postsIn10Min">-</div>
+                    <div class="stat-label">Live posting speed</div>
+                </div>
+            </div>
+
+            <!-- Actieve topics -->
+            <div class="stat-card topics">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-content">
+                    <h3>Actieve Topics</h3>
+                    <div class="stat-value" id="activeTopics">-</div>
+                    <div class="stat-label">Waar Renny post</div>
+                </div>
+            </div>
         </div>
 
         <div class="info-section">
@@ -101,6 +121,38 @@
             <div class="chart-card">
                 <h3>📊 Activiteit Visualisatie</h3>
                 <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Topics sectie -->
+        <div class="topics-section">
+            <div class="topics-card">
+                <h3>🔥 Meest Actieve Topics</h3>
+                <p class="section-subtitle">Topics waar Renny het meest post</p>
+                <div id="topicsList" class="topics-list">
+                    <div class="loading-topics">Laden...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Posting Speed sectie -->
+        <div class="speed-section">
+            <div class="speed-card">
+                <h3>⚡ Posting Speed Analyse</h3>
+                <p class="section-subtitle">Hoe snel post Renny achter elkaar?</p>
+                <div class="speed-stats">
+                    <div class="speed-item">
+                        <span class="speed-label">Posts in laatste 10 minuten:</span>
+                        <span class="speed-value" id="speed10Min">-</span>
+                    </div>
+                    <div class="speed-item">
+                        <span class="speed-label">Gemiddeld per uur:</span>
+                        <span class="speed-value" id="speedPerHour">-</span>
+                    </div>
+                    <div class="speed-note">
+                        💡 Deze data toont hoe actief Renny is op dit moment
+                    </div>
+                </div>
             </div>
         </div>
 
